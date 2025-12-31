@@ -9,7 +9,8 @@ description = "Minimal Flask app for CI/CD pipeline"
 requires-python = ">=3.10"
 dependencies = [
     "flask>=3.0.0",
-    "gunicorn>=21.0.0"
+    "gunicorn>=21.0.0",
+    "pytest>=9.0.2"
 ]
 
 [tool.setuptools.packages.find]
