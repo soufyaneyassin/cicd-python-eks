@@ -1,31 +1,14 @@
 
-# select the terraform workspace (dev, prod)
-terraform {
-    required_version = ">= 0.12"    
+
+resource "null_resource" "workspace_guard" {
+ count = local.is_valid_env ? 0 : 1
+
+  provisioner "local-exec" {
+    command = "echo 'Invalid workspace. Use dev or prod only.' && exit 1"
+  }
 }
 
-resource "aws_s3_bucket" "terraform_state_bucket" {
-         bucket = "flask-app-state-bucket-${terraform.workspace}"
-         acl = "private"
 
-         versioning {
-            enabled = true
-         }
 
-         tags = {
-            Name = "state-bucket-${terraform.workspace}"
-         }
 
-         lifecycle {
-            prevent_destroy = false
-         }
-}
-
-terraform {
-   backend "s3" {
-     bucket = "flask-app-state-bucket-dev"
-     key = "terraform/state/default.tfstate"
-     region = "eu-west-2"
-   }
-}
 
