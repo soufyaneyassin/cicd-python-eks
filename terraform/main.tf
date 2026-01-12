@@ -26,7 +26,7 @@ resource "aws_subnet" "public_subnet" {
        count = length(data.aws_availability_zones.available.names)
        vpc_id = aws_vpc.main.id
        availability_zone = data.aws_availability_zones.available.names[count.index]
-       cidr_block = "to_do"
+       cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)
        map_public_ip_on_launch = true
        tags = local.tags
 
@@ -36,7 +36,7 @@ resource "aws_subnet" "private_subnet" {
        count = length(data.aws_availability_zones.available.names)
        vpc_id = aws_vpc.main.id
        availability_zone = data.aws_availability_zones.available.names[count.index]
-       cidr_block = "to_do"
+       cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index + length(data.aws_availability_zones.available.names))
        tags = local.tags
 
 }
@@ -47,11 +47,20 @@ resource "aws_internet_gateway" "igw" {
            tags = local.tags
 }
 
-resource "aws_nat_gateway" "natgw" {
-         count = aws_subnet.private_subnet.count
-         connectivity_type = "private"
-         subnet_id = aws_subnet.private_subnet.*.id[count.index]
+resource "aws_eip" "eip_natgw" {
+  count = length(aws_subnet.public_subnet)
+  domain                    = "vpc"
 }
+
+resource "aws_nat_gateway" "natgw" {
+         count = length(aws_subnet.public_subnet)
+         allocation_id = aws_eip.eip_natgw[count.index].id
+         subnet_id = aws_subnet.public_subnet[count.index].id
+         tags = local.tags
+         depends_on = [aws_internet_gateway.igw]
+}
+
+
 
 resource "aws_route_table" "public_table" {
        vpc_id = aws_vpc.main.id
@@ -60,26 +69,30 @@ resource "aws_route_table" "public_table" {
         cidr_block = "0.0.0.0/0"
         gateway_id = aws_internet_gateway.igw.id
        }
+       tags = local.tags
 }
 
 resource "aws_route_table" "private_table" {
-       count = aws_nat_gateway.natgw.count
+       count = length(aws_nat_gateway.natgw)
        vpc_id = aws_vpc.main.id
 
        route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = aws_nat_gateway.natgw.id[count.index]
+        nat_gateway_id = aws_nat_gateway.natgw[count.index].id
        }
+        tags = local.tags
 }
 
 resource "aws_route_table_association" "public_association" {
-        count = aws_subnet.public_subnet.count
-        subnet_id = aws_subnet.public_subnet.id[count.index]
+        count = length(aws_subnet.public_subnet)
+        subnet_id = aws_subnet.public_subnet[count.index].id
         route_table_id = aws_route_table.public_table.id
+        tags = local.tags
 }
 
 resource "aws_route_table_association" "private_association" {
-          count = aws_nat_gateway.natgw.count
-          subnet_id = aws_subnet.private_subnet.id[count.index]
-          route_table_id = aws_route_table.private_table.id[count.index]
+          count = length(aws_nat_gateway.natgw)
+          subnet_id = aws_subnet.private_subnet[count.index].id
+          route_table_id = aws_route_table.private_table[count.index].id
+          tags = local.tags
 }
