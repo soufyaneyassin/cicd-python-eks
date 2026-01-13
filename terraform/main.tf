@@ -96,3 +96,44 @@ resource "aws_route_table_association" "private_association" {
           route_table_id = aws_route_table.private_table[count.index].id
           tags = local.tags
 }
+
+# define the eks iam role
+resource "aws_iam_role" "eks_cluster_role" {
+       name = "eks-cluster-role"
+       assume_role_policy = jsonencode({
+              Version = "2012-10-17"
+              Statement = [
+              {
+                     Action = [
+                     "sts:AssumeRole",
+                     "sts:TagSession"
+                     ]
+                     Effect = "Allow"
+                     Principal = {
+                     Service = "eks.amazonaws.com"
+                     }
+              },
+              ]
+              })
+}
+
+resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.eks_cluster_role.name
+}
+
+# define the eks cluster 
+resource "aws_eks_cluster" "main_eks_cluster" {
+       name = "main-eks-cluster"
+       role_arn = aws_iam_role.eks_cluster_role.arn
+      
+       vpc_config {
+              subnet_ids = [
+                     aws_subnet.public_subnet[*].id,
+                     aws_subnet.private_subnet[*].id
+              ]
+       }
+       depends_on = [
+              aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy,
+       ]
+}
