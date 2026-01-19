@@ -184,3 +184,8 @@ resource "aws_eks_node_group" "eks-node-group" {
               aws_iam_role_policy_attachment.node-group-AmazonEC2ContainerRegistryReadOnly,
               ]
 }
+
+# define the eks node group
+resource "aws_security_group" "eks_cluster_sg" {
+       
+}
