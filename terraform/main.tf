@@ -187,5 +187,22 @@ resource "aws_eks_node_group" "eks-node-group" {
 
 # define the eks node group
 resource "aws_security_group" "eks_cluster_sg" {
-       
+       name = "eks_cluster_sg"
+       description = "allow tls traffic from node group"
+       vpc_id = aws_vpc.main.id
+       tags = local.tags
+}
+
+resource "aws_vpc_security_group_ingress_rule" "eks_cluster_tls_ipv4" {
+  security_group_id = aws_security_group.eks_cluster_sg.id
+  cidr_ipv4         = // i dont know how to get the node group cidr, i didnt find it on docs, maybe we should get the related subnets instead
+  from_port         = 443
+  ip_protocol       = "tcp"
+  to_port           = 443
+}
+
+resource "aws_vpc_security_group_egress_rule" "eks_cluster_all_tls_traffic" {
+  security_group_id = aws_security_group.eks_cluster_sg.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1" # semantically equivalent to all ports
 }
