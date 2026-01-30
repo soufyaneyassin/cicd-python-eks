@@ -32,7 +32,45 @@ resource "aws_iam_policy" "eks_access" {
        })
 }
 
+resource "aws_iam_policy" "ecr_access" {
+         name = "github-ecr-access"
+         policy = jsonencode(
+            {
+                "Version":"2012-10-17"		 	 	 
+                "Statement": [
+                    {
+                        "Effect": "Allow"
+                        "Action": [
+                            "ecr:CompleteLayerUpload",
+                            "ecr:UploadLayerPart",
+                            "ecr:InitiateLayerUpload",
+                            "ecr:BatchCheckLayerAvailability",
+                            "ecr:PutImage",
+                            "ecr:BatchGetImage",
+                            "ecr:GetDownloadUrlForLayer",
+                            "ecr:GetRepositoryPolicy",
+                            "ecr:DescribeRepositories",
+                            "ecr:ListImages",
+                            "ecr:DescribeImages",
+                        ]
+                        Resource = "arn:aws:ecr:${var.region}:111122223333:repository/cicd-python-eks-${terraform.workspace}"
+                    },
+                    {
+                        "Effect": "Allow"
+                        "Action": "ecr:GetAuthorizationToken"
+                        "Resource": "*"
+                    }
+                ]
+            }
+         )
+}
+
 resource "aws_iam_role_policy_attachment" "eks_access_attach" {
     role = aws_iam_role.github_actions_role.name
     policy_arn = aws_iam_policy.eks_access.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ecr_access_attach" {
+    role = aws_iam_role.github_actions_role.name
+    policy_arn = aws_iam_policy.ecr_access.arn
 }
