@@ -1,0 +1,33 @@
+name: CI/CD python app Pipeline
+on:
+  push:
+      branches:
+          - dev
+          - main
+  pull_request:
+      branches:
+          - dev
+          - main
+
+jobs:
+   test_code:
+      runs-on: ubuntu-latest
+      steps:
+         - name: Checkout only python_app folder
+           uses: actions/checkout@v6
+           with:
+             sparse-checkout: |
+                python_app/
+             sparse-checkout-cone-mode: false
+         - name: Setup python environment
+           uses: actions/setup-python@v6         
+           with:
+              python-version: '3.13'
+              cache: 'pip'
+         - run: pip install .
+         - name: Start the app
+           run:  |
+             gunicorn app.main:create_app() --bind 0.0.0.0:5000 &
+             sleep 3
+         - name: Run Tests
+           run: pytest
