@@ -37,4 +37,7 @@ jobs:
                 sparse-checkout: |
                      python_app/
                 sparse-checkout-cone-mode: false
-            
+            - name: Setup env variables
+              run: |
+                 echo "ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}" >> $GITHUB_ENV
+                 echo $GITHUB_REF_NAME
