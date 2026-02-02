@@ -24,6 +24,17 @@ jobs:
            with:
               python-version: '3.13'
               cache: 'pip'
-         - run: cd python_app && pip install .
+         - run: ls && cd python_app && pip install .
          - name: Run Tests
            run: pytest
+   build_and_push:
+        needs: test_code
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Only python app
+              uses: actions/checkout@v6
+              with:
+                sparse-checkout: |
+                     python_app/
+                sparse-checkout-cone-mode: false
+            
