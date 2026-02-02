@@ -40,4 +40,13 @@ jobs:
             - name: Setup env variables
               run: |
                  echo "ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}" >> $GITHUB_ENV
-                 echo $GITHUB_REF_NAME
+                 echo "REGION=${{ secrets.REGION }}" >> $GITHUB_ENV
+                 if [[ $GITHUB_REF_NAME == "dev" ]]; then
+                     echo "ECR_REPOSITORY_NAME=${{ secrets.ECR_REPO_DEV }}" >> $GITHUB_ENV
+                 else
+                     echo "ECR_REPOSITORY_NAME=${{ secrets.ECR_REPO_PROD }}" >> $GITHUB_ENV 
+                 fi
+            - name: Build Image 
+              run: |
+                 docker build -t ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:latest
+                 docker images
