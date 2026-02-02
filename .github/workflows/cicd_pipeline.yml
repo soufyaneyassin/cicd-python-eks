@@ -48,5 +48,5 @@ jobs:
                  fi
             - name: Build Image 
               run: |
-                 docker build -t ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:latest
+                 cd python_app && docker build -t ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:latest .
                  docker images
