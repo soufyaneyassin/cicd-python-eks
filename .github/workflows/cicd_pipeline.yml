@@ -8,7 +8,8 @@ on:
       branches:
           - dev
           - main
-
+permissions:
+    id-token: write
 jobs:
    test_code:
       runs-on: ubuntu-latest
@@ -46,7 +47,20 @@ jobs:
                  else
                      echo "ECR_REPOSITORY_NAME=${{ secrets.ECR_REPO_PROD }}" >> $GITHUB_ENV 
                  fi
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                 role-to-assume: arn:aws:iam::${ACCOUNT_ID}:role/github-actions-role
+                 aws-region: $REGION
             - name: Build Image 
               run: |
                  cd python_app && docker build -t ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:latest .
                  docker images
+            - name: Login to ECR
+              uses: aws-actions/amazon-ecr-login@v2
+            - name: Push Image
+              run: |
+                 docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:latest
+   Deploy_to_EKS:
+       
+      
