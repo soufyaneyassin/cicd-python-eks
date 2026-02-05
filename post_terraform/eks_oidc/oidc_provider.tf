@@ -1,4 +1,10 @@
+data "tls_certificate" "eks_tls_cert" {
+  url = data.aws_eks_cluster.main_cluster.identity[0].oidc[0].issuer
+}
+
+
 resource "aws_iam_openid_connect_provider" "eks_oidc" {
-       url = data.aws_eks_cluster.main_cluster.identity.oidc.issuer
+       url = data.aws_eks_cluster.main_cluster.identity[0].oidc[0].issuer
        client_id_list = ["sts.amazonaws.com"]
+       thumbprint_list = [data.tls_certificate.eks_tls_cert.certificates[0].sha1_fingerprint]
 }
