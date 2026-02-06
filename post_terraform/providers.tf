@@ -17,3 +17,11 @@ provider "aws" {
 }
 
 provider "tls" {}
+
+provider "helm" {
+    kubernetes {
+        host = data.aws_eks_cluster.main_cluster.endpoint
+        cluser_ca_certificate = base64decode(data.aws_eks_cluster.main_cluster.certificate_authority[0].data)
+        token = data.aws_eks_cluster_auth.eks_cluster_auth.token
+    }
+}
