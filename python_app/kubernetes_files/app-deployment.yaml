@@ -12,11 +12,13 @@ spec:
          labels:
            app: python-app
       spec:
+         imagePullSecrets:
+         - name: ecr-auth-secret
          containers:
          - name: python-app
            image: ""
            ports:
-             containerPort: 5000
+           - containerPort: 5000
            resources: 
              requests:
                memory: "128Mi"
@@ -24,3 +26,10 @@ spec:
              limits:
                memory: "256Mi"
                cpu: "200m"
+           readinessProbe:
+                httpGet:
+                  path: /health
+                  port: 5000
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                failureThreshold: 3

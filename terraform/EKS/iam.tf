@@ -22,7 +22,7 @@ resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
   role       = aws_iam_role.eks_cluster_role.name
 }
 
-# define the iam role for the worker nodes managed groupe 
+# define the iam role for the worker nodes managed group
 resource "aws_iam_role" "eks_node_group_role" {
        name = "eks-node_group-role-${terraform.workspace}"
        assume_role_policy = jsonencode({
