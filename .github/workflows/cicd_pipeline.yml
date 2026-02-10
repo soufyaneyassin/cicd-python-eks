@@ -11,7 +11,7 @@ on:
 permissions:
     id-token: write
 jobs:
-   test_code:
+   test_and_scan_code:
       runs-on: ubuntu-latest
       steps:
          - name: Checkout only python_app folder
@@ -28,8 +28,19 @@ jobs:
          - run: ls && cd python_app && pip install .
          - name: Run Tests
            run: pytest
+         - name: Run Snyk to check for vulnerabilities
+           uses: snyk/actions/python@master
+           continue-on-error: true
+           env:
+             SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+           with:
+             args: --sarif-file-output=snyk.sarif
+         - name: Upload Result to GitHub Code Scanning
+           uses: github/codeql-action/upload-sarif@v3
+           with:
+             sarif-file: snyk.sarif
    build_and_push:
-        needs: test_code
+        needs: test_and_scan_code
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Only python app
