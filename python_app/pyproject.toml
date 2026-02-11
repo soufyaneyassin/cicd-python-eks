@@ -1,17 +1,20 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "sample-flask-app"
 version = "1.0.0"
 description = "Minimal Flask app for CI/CD pipeline"
-requires-python = ">=3.10"
-dependencies = [
-    "flask>=3.0.0",
-    "gunicorn>=21.0.0",
-    "pytest>=9.0.2"
-]
+authors = ["Soufyane yassin"]
+packages = [{ include = "app", from = "src" }]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.poetry.dependencies]
+python = ">=3.10"
+flask = ">=3.0.0"
+gunicorn = ">=21.0.0"
+pytest = ">=9.0.2"
+
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+

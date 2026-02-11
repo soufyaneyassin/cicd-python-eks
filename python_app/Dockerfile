@@ -3,13 +3,16 @@ FROM  python:3.10-slim
 
 WORKDIR /app
 
-COPY pyproject.toml .
+COPY pyproject.toml poetry.lock ./
 
 COPY src ./src
 
 COPY tests ./tests
 
-RUN pip install --no-cache-dir .
+RUN pip install poetry
+
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction 
 
 EXPOSE 5000
 
