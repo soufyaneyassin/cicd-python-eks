@@ -42,12 +42,12 @@ jobs:
 
          - name: Run Snyk to check for vulnerabilities
            uses: snyk/actions/python@master
-           working-directory: ./python_app
            continue-on-error: true
            env:
              SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
            with:
              args: --sarif-file-output=snyk.sarif
+             working-directory: ./python_app
           
          - name: Upload Result to GitHub Code Scanning
            uses: github/codeql-action/upload-sarif@v3
