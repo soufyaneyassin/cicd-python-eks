@@ -39,6 +39,7 @@ jobs:
            run: pytest
 
          - name: Run Snyk to check for vulnerabilities
+           working-directory: ./python_app
            uses: snyk/actions/python@master
            continue-on-error: true
            env:
