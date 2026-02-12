@@ -12,6 +12,9 @@ permissions:
 jobs:
    test_and_scan_code:
       runs-on: ubuntu-latest
+      defaults:
+        run:
+           working-directory: ./python_app
       steps:
          - name: Checkout only python_app folder
            uses: actions/checkout@v4
@@ -31,7 +34,6 @@ jobs:
          - name: Run Poetry
            run: |
               poetry --version
-              cd python_app
               poetry config virtualenvs.create false
               poetry install --no-interaction 
 
@@ -39,7 +41,6 @@ jobs:
            run: pytest
 
          - name: Run Snyk to check for vulnerabilities
-           working-directory: ./python_app
            uses: snyk/actions/python@master
            continue-on-error: true
            env:
