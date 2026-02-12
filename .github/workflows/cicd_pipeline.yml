@@ -39,7 +39,6 @@ jobs:
            run: pytest
 
          - name: Run Snyk to check for vulnerabilities
-           if: ${{ inputs.run_task == 'true' }}
            uses: snyk/actions/python@master
            continue-on-error: true
            env:
@@ -48,7 +47,6 @@ jobs:
              args: --sarif-file-output=snyk.sarif
           
          - name: Upload Result to GitHub Code Scanning
-           if: ${{ inputs.run_task == 'true' }}
            uses: github/codeql-action/upload-sarif@v3
            with:
              sarif-file: snyk.sarif
