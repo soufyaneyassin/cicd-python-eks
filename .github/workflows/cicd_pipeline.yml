@@ -1,15 +1,14 @@
 name: CI/CD python app Pipeline
 on:
-  push:
-      branches:
-          - dev
-          - main
-  pull_request:
-      branches:
-          - dev
-          - main
+  workflow_dispatch:
+    inputs:
+      run_task:
+        description: 'Whether to run the step'
+        required: 'true'
+        default: 'false'
 permissions:
     id-token: write
+  
 jobs:
    test_and_scan_code:
       runs-on: ubuntu-latest
@@ -20,28 +19,60 @@ jobs:
              sparse-checkout: |
                 python_app/
              sparse-checkout-cone-mode: false
+
          - name: Setup python environment
            uses: actions/setup-python@v4         
            with:
               python-version: '3.13'
-              cache: 'pip'
-         - run: ls && cd python_app && pip install .
+
+         - name: Setup and Run Poetry
+           uses: Gr1N/setup-poetry@v8
+           run: |
+              poetry --version
+              cd python_app
+              poetry config virtualenvs.create false
+              poetry install --no-interaction 
+
          - name: Run Tests
            run: pytest
+
          - name: Run Snyk to check for vulnerabilities
+           if: ${{ inputs.run_task == 'true' }}
            uses: snyk/actions/python@master
            continue-on-error: true
            env:
              SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
            with:
              args: --sarif-file-output=snyk.sarif
+          
          - name: Upload Result to GitHub Code Scanning
+           if: ${{ inputs.run_task == 'true' }}
            uses: github/codeql-action/upload-sarif@v3
            with:
              sarif-file: snyk.sarif
+            
+         - name: Generate Trivy Vulnerability Report
+           if: ${{ inputs.run_task == 'true' }}
+           uses: aquasecurity/trivy-action@master
+           with:
+              scan-type: "fs"
+              output: trivy-report.json
+              format: json
+              scan-ref: python_app
+              exit-code: 0
+         - name: Upload Vulnerability Scan Results
+           if: ${{ inputs.run_task == 'true' }}
+           uses: actions/upload-artifact@v4
+           with:
+              name: trivy-report
+              path: trivy-report.json
+              retention-days: 30
+
+
    build_and_push:
         needs: test_and_scan_code
         runs-on: ubuntu-latest
+        if: ${{ inputs.run_task == 'true' }}
         steps:
             - name: Checkout Only python app
               uses: actions/checkout@v4
@@ -49,6 +80,7 @@ jobs:
                 sparse-checkout: |
                      python_app/
                 sparse-checkout-cone-mode: false
+
             - name: Setup env variables
               run: |
                  echo "ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}" >> $GITHUB_ENV
@@ -58,23 +90,30 @@ jobs:
                  else
                      echo "ECR_REPOSITORY_NAME=${{ secrets.ECR_REPO_PROD }}" >> $GITHUB_ENV 
                  fi
+
             - name: Configure AWS Credentials
               uses: aws-actions/configure-aws-credentials@v4
               with:
                  role-to-assume: arn:aws:iam::${ACCOUNT_ID}:role/github-actions-role
                  aws-region: $REGION
+
             - name: Build Image 
               run: |
                  cd python_app && docker build -t ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:$GITHUB_RUN_ID .
                  docker images
+
             - name: Login to ECR
               uses: aws-actions/amazon-ecr-login@v2
+
             - name: Push Image
               run: |
                  docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:$GITHUB_RUN_ID
+
+
    Deploy_to_EKS:
         needs: build_and_push
         runs-on: ubuntu-latest
+        if: ${{ inputs.run_task == 'true' }}
         steps:
             - name: Checkout Only python app
               uses: actions/checkout@v4
@@ -82,6 +121,7 @@ jobs:
                 sparse-checkout: |
                      python_app/
                 sparse-checkout-cone-mode: false
+
             - name: Setup env variables
               run: |
                  echo "ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}" >> $GITHUB_ENV
@@ -93,14 +133,17 @@ jobs:
                      echo "ECR_REPOSITORY_NAME=${{ secrets.ECR_REPO_PROD }}" >> $GITHUB_ENV 
                      echo "CLUSTER_NAME=${{ secrets.CLUSTER_NAME_PROD }}" >> $GITHUB_ENV
                  fi
+
             - name: Configure AWS Credentials
               uses: aws-actions/configure-aws-credentials@v4
               with:
                  role-to-assume: arn:aws:iam::${ACCOUNT_ID}:role/github-actions-role
                  aws-region: $REGION
+
             - name: update KubeConfig
               run: |
                aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
+
             - name: apply the yaml files
               run: |
                ECR_IMAGE=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:$GITHUB_RUN_ID
