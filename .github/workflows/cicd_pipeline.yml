@@ -1,11 +1,11 @@
 name: CI/CD python app Pipeline
 on:
-  workflow_dispatch:
-    inputs:
-      run_task:
-        description: 'Whether to run the step'
-        required: 'true'
-        default: 'false'
+   workflow_dispatch:
+        inputs:
+          run_task:
+            description: 'Whether to run the step'
+            required: 'true'
+            default: 'false'
 permissions:
     id-token: write
   
