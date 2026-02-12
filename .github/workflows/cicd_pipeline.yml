@@ -27,6 +27,8 @@ jobs:
 
          - name: Setup and Run Poetry
            uses: Gr1N/setup-poetry@v8
+          
+         - name: Run Poetry
            run: |
               poetry --version
               cd python_app
