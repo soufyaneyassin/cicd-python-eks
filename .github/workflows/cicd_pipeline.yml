@@ -105,7 +105,7 @@ jobs:
             - name: Generate Trivy Vulnerability Report
               uses: aquasecurity/trivy-action@master
               with:
-                  image-ref: ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:$GITHUB_RUN_ID
+                  image-ref: ${{ env.ACCOUNT_ID }}.dkr.ecr.${{ env.REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_NAME }}:${{ github.run_id }}
                   format: sarif
                   output: image-trivy-scan-results.sarif
                   severity: HIGH,CRITICAL
