@@ -50,12 +50,6 @@ jobs:
            with:
              command: code test
              args: --sarif-file-output=snyk.sarif ./python_app
-             
-          
-         - name: Upload Snyk Result to GitHub Code Scanning
-           uses: github/codeql-action/upload-sarif@v4
-           with:
-             sarif_file: snyk.sarif
             
          - name: Generate Trivy Vulnerability Report
            uses: aquasecurity/trivy-action@master
@@ -68,17 +62,16 @@ jobs:
               ignore-unfixed: true
               exit-code: 1
          
-         - name: Upload trivy Result to GitHub Code Scanning
+         - name: Upload Snyk + trivy Results to GitHub Code Scanning
            uses: github/codeql-action/upload-sarif@v4
            with:
-             sarif_file: trivy-results.sarif
+             sarif_file: ${{ github.workspace }}
 
 
 
    build_and_push:
         needs: test_and_scan_code
         runs-on: ubuntu-latest
-        if: ${{ inputs.run_task == 'true' }}
         steps:
             - name: Checkout Only python app
               uses: actions/checkout@v4
@@ -98,6 +91,7 @@ jobs:
                  fi
 
             - name: Configure AWS Credentials
+              if: ${{ inputs.run_task == 'true' }}
               uses: aws-actions/configure-aws-credentials@v4
               with:
                  role-to-assume: arn:aws:iam::${ACCOUNT_ID}:role/github-actions-role
@@ -108,10 +102,27 @@ jobs:
                  cd python_app && docker build -t ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:$GITHUB_RUN_ID .
                  docker images
 
+            - name: Generate Trivy Vulnerability Report
+              uses: aquasecurity/trivy-action@master
+              with:
+                  image-ref: ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:$GITHUB_RUN_ID
+                  format: sarif
+                  output: image-trivy-scan-results.sarif
+                  severity: HIGH,CRITICAL
+                  ignore-unfixed: true
+                  exit-code: 1
+
+            - name: Upload trivy Result to GitHub Code Scanning
+              uses: github/codeql-action/upload-sarif@v4
+              with:
+                 sarif_file: ${{ github.workspace }}
+
             - name: Login to ECR
+              if: ${{ inputs.run_task == 'true' }}
               uses: aws-actions/amazon-ecr-login@v2
 
             - name: Push Image
+              if: ${{ inputs.run_task == 'true' }}
               run: |
                  docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:$GITHUB_RUN_ID
 
