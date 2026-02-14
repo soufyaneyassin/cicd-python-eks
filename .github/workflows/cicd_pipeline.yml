@@ -132,7 +132,7 @@ jobs:
    Deploy_to_EKS:
         needs: build_and_push
         runs-on: ubuntu-latest
-        if: ${{ inputs.run_task == 'true' }}
+        environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}
         steps:
             - name: Checkout Only python app
               uses: actions/checkout@v4
@@ -152,18 +152,27 @@ jobs:
                      echo "ECR_REPOSITORY_NAME=${{ secrets.ECR_REPO_PROD }}" >> $GITHUB_ENV 
                      echo "CLUSTER_NAME=${{ secrets.CLUSTER_NAME_PROD }}" >> $GITHUB_ENV
                  fi
-
+            
+            - name: Test Manual Approval
+              run: |
+                echo "Tesing Manual Approval Gate"
+                echo "DEPLOYING Branch: ${{ github.ref }}"
+                echo "Target Environement: ${{ github.event.repository.environement || 'dev' }}"
+ 
             - name: Configure AWS Credentials
+              if: ${{ inputs.run_task == 'true' }}
               uses: aws-actions/configure-aws-credentials@v4
               with:
                  role-to-assume: arn:aws:iam::${ACCOUNT_ID}:role/github-actions-role
                  aws-region: $REGION
 
             - name: update KubeConfig
+              if: ${{ inputs.run_task == 'true' }}
               run: |
                aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
 
             - name: apply the yaml files
+              if: ${{ inputs.run_task == 'true' }}
               run: |
                ECR_IMAGE=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:$GITHUB_RUN_ID
                sed -i "s|image: \"\"|image: ${ECR_IMAGE}|" kubernetes_files/app-deployment.yaml
